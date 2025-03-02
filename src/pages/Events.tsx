@@ -1,13 +1,12 @@
-
 import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import EventList, { eventsMockData } from '@/components/EventList';
+import { eventsMockData } from '@/components/EventList';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { CalendarIcon, Search, Filter, SlidersHorizontal } from 'lucide-react';
+import { CalendarIcon, Search, SlidersHorizontal } from 'lucide-react';
 import AnimatedSection from '@/components/AnimatedSection';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -15,18 +14,22 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import EventCard from '@/components/EventCard';
+import { useUser } from '@/context/UserContext';
 
 const Events: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [date, setDate] = useState<Date | undefined>(undefined);
   const { toast } = useToast();
+  const { isAuthenticated } = useUser();
 
   // Filter events based on search query and filters
   const filteredEvents = eventsMockData.filter(event => {
     const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           event.location.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory ? event.category === selectedCategory : true;
+    const matchesCategory = selectedCategory ? 
+                            (selectedCategory === 'all' ? true : event.category === selectedCategory) : 
+                            true;
     return matchesSearch && matchesCategory;
   });
 
@@ -52,7 +55,9 @@ const Events: React.FC = () => {
         <div className="bg-secondary/30 py-12">
           <div className="container mx-auto px-4">
             <AnimatedSection className="max-w-4xl mx-auto">
-              <h1 className="text-3xl md:text-4xl font-medium mb-4">Discover Events</h1>
+              <h1 className="text-3xl md:text-4xl font-medium mb-4">
+                {isAuthenticated ? 'Welcome back to Events' : 'Discover Events'}
+              </h1>
               <p className="text-foreground/70 text-lg">
                 Find and book tickets for the most exciting events happening near you
               </p>
@@ -129,7 +134,7 @@ const Events: React.FC = () => {
               
               {selectedCategory && (
                 <Badge variant="secondary" className="flex items-center gap-1">
-                  Category: {selectedCategory}
+                  Category: {selectedCategory === 'all' ? 'All Categories' : selectedCategory}
                   <button 
                     className="ml-1 hover:text-foreground" 
                     onClick={() => setSelectedCategory('')}

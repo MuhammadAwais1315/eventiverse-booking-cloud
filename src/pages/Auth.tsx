@@ -10,11 +10,21 @@ import { Mail, Lock, User, ArrowRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import AnimatedSection from '@/components/AnimatedSection';
+import { useUser } from '@/context/UserContext';
 
 const Auth: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [authType, setAuthType] = useState<'signin' | 'signup'>('signin');
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    agreedToTerms: false
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const { signin, signup, isAuthenticated } = useUser();
   
   useEffect(() => {
     const type = searchParams.get('type');
@@ -22,12 +32,39 @@ const Auth: React.FC = () => {
       setAuthType(type);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    // Redirect if already authenticated
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would handle authentication
-    // For now, just navigate to home
-    navigate('/');
+    setIsSubmitting(true);
+    
+    try {
+      if (authType === 'signin') {
+        await signin(formData.email, formData.password);
+      } else {
+        await signup(formData.name, formData.email, formData.password);
+      }
+      navigate('/');
+    } catch (error) {
+      console.error('Authentication error:', error);
+      // Error is already handled in the useUser hook
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -56,10 +93,13 @@ const Auth: React.FC = () => {
                     <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50" />
                     <Input 
                       id="name" 
+                      name="name"
                       type="text" 
                       placeholder="Your full name" 
                       className="pl-10"
                       required
+                      value={formData.name}
+                      onChange={handleChange}
                     />
                   </div>
                 </div>
@@ -71,10 +111,13 @@ const Auth: React.FC = () => {
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50" />
                   <Input 
                     id="email" 
+                    name="email"
                     type="email" 
                     placeholder="your.email@example.com" 
                     className="pl-10"
                     required
+                    value={formData.email}
+                    onChange={handleChange}
                   />
                 </div>
               </div>
@@ -92,17 +135,28 @@ const Auth: React.FC = () => {
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50" />
                   <Input 
                     id="password" 
+                    name="password"
                     type="password" 
                     placeholder="••••••••"
                     className="pl-10"
                     required
+                    value={formData.password}
+                    onChange={handleChange}
                   />
                 </div>
               </div>
               
               {authType === 'signup' && (
                 <div className="flex items-center space-x-2">
-                  <Checkbox id="terms" required />
+                  <Checkbox 
+                    id="terms" 
+                    name="agreedToTerms"
+                    checked={formData.agreedToTerms}
+                    onCheckedChange={(checked) => 
+                      setFormData(prev => ({ ...prev, agreedToTerms: checked === true }))
+                    }
+                    required
+                  />
                   <Label htmlFor="terms" className="text-xs text-foreground/70">
                     I agree to the{" "}
                     <Link to="/terms" className="text-accent hover:underline">
@@ -116,9 +170,18 @@ const Auth: React.FC = () => {
                 </div>
               )}
               
-              <Button type="submit" className="w-full rounded-md mt-6 font-normal">
-                {authType === 'signin' ? 'Sign In' : 'Create Account'}
-                <ArrowRight className="h-4 w-4 ml-1.5" />
+              <Button 
+                type="submit" 
+                className="w-full rounded-md mt-6 font-normal"
+                disabled={isSubmitting}
+              >
+                {isSubmitting 
+                  ? 'Processing...' 
+                  : authType === 'signin' 
+                    ? 'Sign In' 
+                    : 'Create Account'
+                }
+                {!isSubmitting && <ArrowRight className="h-4 w-4 ml-1.5" />}
               </Button>
             </form>
             
@@ -135,7 +198,7 @@ const Auth: React.FC = () => {
               </div>
               
               <div className="grid grid-cols-2 gap-3 mt-4">
-                <Button variant="outline" className="rounded-md font-normal">
+                <Button variant="outline" className="rounded-md font-normal" type="button">
                   <img 
                     src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" 
                     alt="Google" 
@@ -143,7 +206,7 @@ const Auth: React.FC = () => {
                   />
                   Google
                 </Button>
-                <Button variant="outline" className="rounded-md font-normal">
+                <Button variant="outline" className="rounded-md font-normal" type="button">
                   <img 
                     src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/apple/apple-original.svg" 
                     alt="Apple" 
