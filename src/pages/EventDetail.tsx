@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -14,15 +14,21 @@ import {
   Heart,
   Ticket,
   CreditCard,
-  ArrowLeft
+  ArrowLeft,
+  ShoppingCart
 } from 'lucide-react';
 import AnimatedSection from '@/components/AnimatedSection';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import EventCard from '@/components/EventCard';
+import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
+import { addToCart } from '@/services/bookingService';
 
 const EventDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [quantity, setQuantity] = useState(1);
+  const { toast: uiToast } = useToast();
   
   // In a real app, this would fetch the event details from an API
   const event = eventsMockData.find(event => event.id === id) || eventsMockData[0];
@@ -48,6 +54,36 @@ const EventDetail: React.FC = () => {
   const similarEvents = eventsMockData
     .filter(e => e.id !== id)
     .slice(0, 3);
+
+  const handleAddToCart = () => {
+    addToCart({
+      eventId: event.id,
+      eventTitle: event.title,
+      price: eventDetails.price,
+      quantity: quantity,
+      imageUrl: event.imageUrl
+    });
+  };
+
+  const handleBookNow = () => {
+    addToCart({
+      eventId: event.id,
+      eventTitle: event.title,
+      price: eventDetails.price,
+      quantity: quantity,
+      imageUrl: event.imageUrl
+    });
+    
+    uiToast({
+      title: "Ticket added to cart!",
+      description: `${quantity} ticket${quantity > 1 ? 's' : ''} for ${event.title} added.`,
+    });
+    
+    // In a real app, this would navigate to checkout
+    setTimeout(() => {
+      window.location.href = '/cart';
+    }, 1500);
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -178,7 +214,11 @@ const EventDetail: React.FC = () => {
                       <label className="text-sm text-foreground/70 mb-1.5 block">
                         Select quantity
                       </label>
-                      <select className="w-full rounded-md border border-input bg-background px-3 py-2">
+                      <select 
+                        className="w-full rounded-md border border-input bg-background px-3 py-2"
+                        value={quantity}
+                        onChange={(e) => setQuantity(parseInt(e.target.value))}
+                      >
                         {[1, 2, 3, 4, 5].map(num => (
                           <option key={num} value={num}>
                             {num} {num === 1 ? 'ticket' : 'tickets'}
@@ -187,13 +227,13 @@ const EventDetail: React.FC = () => {
                       </select>
                     </div>
                     
-                    <Button className="w-full mt-4 rounded-md font-normal">
+                    <Button className="w-full mt-4 rounded-md font-normal" onClick={handleBookNow}>
                       <Ticket className="h-4 w-4 mr-1.5" />
                       Book Tickets
                     </Button>
                     
-                    <Button variant="outline" className="w-full rounded-md font-normal">
-                      <CreditCard className="h-4 w-4 mr-1.5" />
+                    <Button variant="outline" className="w-full rounded-md font-normal" onClick={handleAddToCart}>
+                      <ShoppingCart className="h-4 w-4 mr-1.5" />
                       Add to Cart
                     </Button>
                     
