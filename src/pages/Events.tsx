@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
+import EventCard from '@/components/EventCard';
 
 const Events: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -186,12 +187,7 @@ const Events: React.FC = () => {
                     delay={index * 100}
                   >
                     <div className="event-card-wrapper">
-                      {/* We'll reuse the EventCard component */}
-                      {React.createElement(
-                        // Using dynamic import to avoid circular dependencies
-                        require('@/components/EventCard').default, 
-                        { ...event }
-                      )}
+                      <EventCard {...event} />
                     </div>
                   </AnimatedSection>
                 ))}
